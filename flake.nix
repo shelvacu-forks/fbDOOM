@@ -12,5 +12,9 @@
       fbdoom = pkgs.callPackage ./package.nix { };
       default = fbdoom;
     };
+
+    overlays.default = (final: super: {
+      fbdoom = final.callPackage ./package.nix { };
+    });
   };
 }

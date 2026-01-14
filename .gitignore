@@ -1,0 +1,7 @@
+/result
+/result-*
+/fbdoom/build
+/fbdoom/fbdoom
+/fbdoom/fbdoom.*
+/sndserv/*.o
+/sndserv/sndserver
