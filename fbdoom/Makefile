@@ -13,17 +13,16 @@ else
 	VB=@
 endif
 
-#LIBS+=-lXext -lX11 -lnsl -lm -lSDL
-#CFLAGS+=-Wunused-const-variable=0 
-#CFLAGS+=-fsanitize=address
-OBJS+=$(OBJDIR)/i_video_fbdev.o
-OBJS+=$(OBJDIR)/i_input_tty.o
+#LIBS += -lXext -lX11 -lnsl -lm -lSDL
+#CFLAGS += -Wunused-const-variable=0 
+#CFLAGS += -fsanitize=address
+OBJS += $(OBJDIR)/i_video_fbdev.o
+OBJS += $(OBJDIR)/i_input_tty.o
 
-CC=$(CROSS_COMPILE)gcc  # gcc or g++
-CFLAGS+=-ggdb3 -Os
-LDFLAGS+=-Wl,--gc-sections
-CFLAGS+=-ggdb3 -Wall -DNORMALUNIX -DLINUX -DSNDSERV # -DUSEASM
-LIBS+=-lm -lc
+CC ?= $(CROSS_COMPILE)gcc  # gcc or g++
+CFLAGS += -Os -std=c11 -ggdb3 -Wall -D_XOPEN_SOURCE=500 -D_DEFAULT_SOURCE -DNORMALUNIX -DLINUX -DSNDSERV
+LDFLAGS += -Wl,--gc-sections
+LIBS += -lm -lc
 
 ifneq ($(NOSDL),1)
 	LIBS+= -lSDL
@@ -37,24 +36,25 @@ SRC_DOOM = i_main.o dummy.o am_map.o doomdef.o doomstat.o dstrings.o d_event.o d
 OBJS += $(addprefix $(OBJDIR)/, $(SRC_DOOM))
 
 all:	 $(OUTPUT)
+.PHONY: all
 
 clean:
 	rm -rf $(OBJDIR)
 	rm -f $(OUTPUT)
 	rm -f $(OUTPUT).gdb
 	rm -f $(OUTPUT).map
+.PHONY: clean
 
 $(OUTPUT):	$(OBJS)
 	@echo [Linking $@]
-	$(VB)$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) \
-	-o $(OUTPUT) $(LIBS) -Wl,-Map,$(OUTPUT).map
+	$(VB)$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -o $(OUTPUT) $(LIBS) -Wl,-Map,$(OUTPUT).map
 	@echo [Size]
 	-$(CROSS_COMPILE)size $(OUTPUT)
 
 $(OBJS): | $(OBJDIR)
 
 $(OBJDIR):
-	mkdir -p $(OBJDIR)
+	mkdir -p $@
 
 $(OBJDIR)/%.o:	%.c
 	@echo [Compiling $<]
@@ -62,4 +62,4 @@ $(OBJDIR)/%.o:	%.c
 
 print:
 	@echo OBJS: $(OBJS)
-
+.PHONY: print

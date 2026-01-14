@@ -6,34 +6,29 @@
 #
 #
 
-CC=gcc
-CFLAGS=-O -DNORMALUNIX -DLINUX
-LDFLAGS=
-LIBS=-lm
+CC ?= gcc
+CFLAGS += -O -DNORMALUNIX -DLINUX -std=c11
+LDFLAGS +=
+LIBS += -lm
 
-O=linux
+OUTPUT=sndserver
 
-all:	 $(O)/sndserver
+all: $(OUTPUT)
+.PHONY: all
 
 clean:
-	rm -f *.o *~ *.flc
-	rm -f linux/*
+	rm -f *.o *~ *.flc sndserver
+.PHONY: clean
 
-# Target
-$(O)/sndserver: \
-	$(O)/soundsrv.o \
-	$(O)/sounds.o \
-	$(O)/wadread.o \
-	$(O)/linux.o
-	$(CC) $(CFLAGS) $(LDFLAGS) \
-	$(O)/soundsrv.o \
-	$(O)/sounds.o \
-	$(O)/wadread.o \
-	$(O)/linux.o -o $(O)/sndserver $(LIBS)
+OBJECTS = $(patsubst %.c,%.o,$(wildcard *.c))
+
+$(OUTPUT): $(OBJECTS)
+	@echo "[linking $@]"
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 	echo make complete.
 
-# Rule
-$(O)/%.o: %.c
+%.o: %.c
+	@echo "[compiling $<]"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
