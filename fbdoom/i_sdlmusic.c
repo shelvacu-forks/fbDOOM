@@ -783,15 +783,20 @@ static boolean WriteWrapperTimidityConfig(char *write_path)
     char *p, *path;
     FILE *fstream;
 
+    fprintf(stderr, "WriteWrapperTimidityConfig\n");
+
     if (!strcmp(timidity_cfg_path, ""))
     {
+        fprintf(stderr, "timidity_cfg_path is empty :(\n");
         return false;
     }
 
+    fprintf(stderr, "trying to fopen %s\n", write_path);
     fstream = fopen(write_path, "w");
 
     if (fstream == NULL)
     {
+        fprintf(stderr, "failed to fopen\n");
         return false;
     }
 
@@ -817,12 +822,13 @@ void I_InitTimidityConfig(void)
 
     temp_timidity_cfg = M_TempFile("timidity.cfg");
 
-    if (snd_musicdevice == SNDDEVICE_GUS)
+    // if (snd_musicdevice == SNDDEVICE_GUS)
+    // {
+    //     success = GUS_WriteConfig(temp_timidity_cfg);
+    // }
+    // else
     {
-        success = GUS_WriteConfig(temp_timidity_cfg);
-    }
-    else
-    {
+        fprintf(stderr, "writing timidity cfg to %s\n", temp_timidity_cfg);
         success = WriteWrapperTimidityConfig(temp_timidity_cfg);
     }
 
@@ -831,11 +837,13 @@ void I_InitTimidityConfig(void)
 
     if (success)
     {
+        fprintf(stderr, "write timidity cfg success\n");
         env_string = M_StringJoin("TIMIDITY_CFG=", temp_timidity_cfg, NULL);
         putenv(env_string);
     }
     else
     {
+        fprintf(stderr, "write timidity cfg FAIL\n");
         free(temp_timidity_cfg);
         temp_timidity_cfg = NULL;
     }
@@ -889,6 +897,8 @@ void TrackPositionCallback(int chan, void *stream, int len, void *udata)
 static boolean I_SDL_InitMusic(void)
 {
     int i;
+
+    fprintf(stderr, "I_SDL_InitMusic\n");
 
     // SDL_mixer prior to v1.2.11 has a bug that causes crashes
     // with MIDI playback.  Print a warning message if we are
@@ -1047,6 +1057,7 @@ static void I_SDL_PlaySong(void *handle, boolean looping)
         SDL_UnlockAudio();
     }
 
+    fprintf(stderr, "Mix_PlayMusic\n");
     Mix_PlayMusic(current_track_music, loops);
 }
 

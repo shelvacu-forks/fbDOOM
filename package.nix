@@ -1,6 +1,9 @@
 {
   stdenv,
   SDL,
+  SDL_mixer,
+  libserialport,
+  pkg-config,
 }:
 stdenv.mkDerivation {
   name = "fbdoom";
@@ -8,7 +11,9 @@ stdenv.mkDerivation {
 
   src = ./.;
 
-  buildInputs = [ SDL ];
+  nativeBuildInputs = [ pkg-config ];
+
+  buildInputs = [ SDL SDL_mixer libserialport ];
 
   installFlags = [ "PREFIX=${placeholder "out"}" ];
 }

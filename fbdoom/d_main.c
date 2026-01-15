@@ -1608,6 +1608,7 @@ void D_DoomMain (void)
     I_CheckIsScreensaver();
     I_InitTimer();
     I_InitJoystick();
+    DEH_printf("I_InitSound(true)\n");
     I_InitSound(true);
     I_InitMusic();
 

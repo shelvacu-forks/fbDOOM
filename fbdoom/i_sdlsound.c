@@ -985,6 +985,8 @@ static boolean I_SDL_InitSound(boolean _use_sfx_prefix)
 {
     int i;
 
+    fprintf(stderr, "I_SDL_InitSound\n");
+
     use_sfx_prefix = _use_sfx_prefix;
 
     // No sounds yet

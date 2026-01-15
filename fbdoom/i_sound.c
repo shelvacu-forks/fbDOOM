@@ -57,16 +57,16 @@ char *snd_musiccmd = "";
 static sound_module_t *sound_module;
 static music_module_t *music_module;
 
-int snd_musicdevice = SNDDEVICE_SB;
+int snd_musicdevice = SNDDEVICE_GENMIDI;
 int snd_sfxdevice = SNDDEVICE_SB;
 
 // Sound modules
 
 extern void I_InitTimidityConfig(void);
 extern sound_module_t sound_sdl_module;
-extern sound_module_t sound_pcsound_module;
+// extern sound_module_t sound_pcsound_module;
 extern music_module_t music_sdl_module;
-extern music_module_t music_opl_module;
+// extern music_module_t music_opl_module;
 
 // For OPL module:
 
@@ -93,7 +93,7 @@ static sound_module_t *sound_modules[] =
 {
 #ifdef FEATURE_SOUND
     &sound_sdl_module,
-    &sound_pcsound_module,
+    // &sound_pcsound_module,
 #endif
     NULL,
 };
@@ -104,7 +104,7 @@ static music_module_t *music_modules[] =
 {
 #ifdef FEATURE_SOUND
     &music_sdl_module,
-    &music_opl_module,
+    // &music_opl_module,
 #endif
     NULL,
 };
@@ -162,17 +162,21 @@ static void InitMusicModule(void)
 {
     int i;
 
+    fprintf(stderr, "InitMusicModule\n");
+
     music_module = NULL;
 
     for (i=0; music_modules[i] != NULL; ++i)
     {
+        fprintf(stderr, "Checking index %d\n", i);
         // Is the music device in the list of devices supported
         // by this module?
 
-        if (SndDeviceInList(snd_musicdevice, 
+        if (true || SndDeviceInList(snd_musicdevice, 
                             music_modules[i]->sound_devices,
                             music_modules[i]->num_sound_devices))
         {
+            fprintf(stderr, "Selecting music module index %d\n", i);
             // Initialize the module
 
             if (music_modules[i]->Init())
@@ -217,6 +221,10 @@ void I_InitSound(boolean use_sfx_prefix)
     //
 
     nomusic = M_CheckParm("-nomusic") > 0;
+
+    fprintf(stderr, "nosound = %d\n", nosound);
+    fprintf(stderr, "nosfx = %d\n", nosfx);
+    fprintf(stderr, "nomusic = %d\n", nomusic);
 
     // Initialize the sound and music subsystems.
 
@@ -409,8 +417,10 @@ void I_UnRegisterSong(void *handle)
 
 void I_PlaySong(void *handle, boolean looping)
 {
+    fprintf(stderr, "I_PlaySong\n");
     if (music_module != NULL)
     {
+        fprintf(stderr, "and music_module->PlaySong\n");
         music_module->PlaySong(handle, looping);
     }
 }
