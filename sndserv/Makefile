@@ -17,7 +17,7 @@ all: $(OUTPUT)
 .PHONY: all
 
 clean:
-	rm -f *.o *~ *.flc sndserver
+	rm -f *.o sndserver
 .PHONY: clean
 
 OBJECTS = $(patsubst %.c,%.o,$(wildcard *.c))
