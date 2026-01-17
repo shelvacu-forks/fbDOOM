@@ -1,7 +1,9 @@
 {
+  lib,
   stdenv,
   SDL,
   SDL_mixer,
+  withSDL ? true,
   libserialport,
   pkg-config,
 }:
@@ -11,9 +13,14 @@ stdenv.mkDerivation {
 
   src = ./.;
 
+  strictDeps = true;
+
   nativeBuildInputs = [ pkg-config ];
 
-  buildInputs = [ SDL SDL_mixer libserialport ];
+  buildInputs = [ libserialport ]
+  ++ lib.optionals withSDL [ SDL SDL_mixer ];
+
+  buildFlags = lib.optional (!withSDL) "NOSDL=1";
 
   installFlags = [ "PREFIX=${placeholder "out"}" ];
 }

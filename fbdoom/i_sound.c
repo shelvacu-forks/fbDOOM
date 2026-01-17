@@ -62,11 +62,14 @@ int snd_sfxdevice = SNDDEVICE_SB;
 
 // Sound modules
 
+#ifdef FEATURE_SOUND
 extern void I_InitTimidityConfig(void);
+
 extern sound_module_t sound_sdl_module;
 // extern sound_module_t sound_pcsound_module;
 extern music_module_t music_sdl_module;
 // extern music_module_t music_opl_module;
+#endif
 
 // For OPL module:
 
@@ -238,7 +241,9 @@ void I_InitSound(boolean use_sfx_prefix)
          && (snd_musicdevice == SNDDEVICE_GENMIDI
           || snd_musicdevice == SNDDEVICE_GUS))
         {
+#ifdef FEATURE_SOUND
             I_InitTimidityConfig();
+#endif
         }
 
         if (!nosfx)
