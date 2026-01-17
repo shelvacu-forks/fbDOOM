@@ -18,6 +18,7 @@ endif
 #CFLAGS += -fsanitize=address
 OBJS += $(OBJDIR)/i_video_fbdev.o
 OBJS += $(OBJDIR)/i_input_nfc.o
+PKG_CONFIG ?= pkg-config
 
 CC ?= $(CROSS_COMPILE)gcc  # gcc or g++
 CFLAGS += -Os -std=c11 -ggdb3 -Wall -D_XOPEN_SOURCE=500 -D_DEFAULT_SOURCE -DNORMALUNIX -DLINUX -DSNDSERV
@@ -29,8 +30,8 @@ PKG_CONFIG_LIBS = libserialport
 ifneq ($(NOSDL),1)
 	PKG_CONFIG_LIBS += sdl SDL_mixer
 endif
-CFLAGS += $(shell pkg-config $(PKG_CONFIG_LIBS) --cflags)
-LIBS += $(shell pkg-config $(PKG_CONFIG_LIBS) --libs)
+CFLAGS += $(shell $(PKG_CONFIG) $(PKG_CONFIG_LIBS) --cflags)
+LIBS += $(shell $(PKG_CONFIG) $(PKG_CONFIG_LIBS) --libs)
 
 # subdirectory for objects
 OBJDIR=build
