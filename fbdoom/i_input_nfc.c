@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <libserialport.h>
+#include <assert.h>
 #include "config.h"
 #include "deh_str.h"
 #include "doomtype.h"
@@ -26,9 +27,12 @@ typedef struct {
   uint8_t sequence_number;
   uint8_t unk;
   uint8_t message_type;
-  uint16_t data_length;
+  uint8_t data_length_msb;
+  uint8_t data_length_lsb;
   uint8_t crc;
 } ipp_header;
+
+
 
 typedef struct {
   char tag_id[7];
@@ -37,12 +41,18 @@ typedef struct {
 } tag_info;
 
 tag_info all_tags[] = {
-  { .tag_id = { 0x04, 0x04, 0xcb, 0x65, 0x5f, 0x61, 0x80 }, .doom_keycode = 'w' },
-  { .tag_id = { 0x04, 0x51, 0xcd, 0x65, 0x5f, 0x61, 0x80 }, .doom_keycode = 's' },
+  { .tag_id = { 0x04, 0x04, 0xcb, 0x65, 0x5f, 0x61, 0x80 }, .doom_keycode = KEY_UPARROW },
+  { .tag_id = { 0x04, 0x51, 0xcd, 0x65, 0x5f, 0x61, 0x80 }, .doom_keycode = KEY_DOWNARROW },
+  { .tag_id = { 0x04, 0x5c, 0xbe, 0x54, 0x6f, 0x61, 0x81 }, .doom_keycode = KEY_LEFTARROW },
+  { .tag_id = { 0x04, 0x79, 0x03, 0x54, 0x6F, 0x61, 0x80 }, .doom_keycode = KEY_RIGHTARROW },
+  { .tag_id = { 0x04, 0x99, 0x66, 0x63, 0x5F, 0x61, 0x80 }, .doom_keycode = KEY_FIRE },
+  { .tag_id = { 0x04, 0x4D, 0xD6, 0x64, 0x5F, 0x61, 0x80 }, .doom_keycode = 0 },
+  { .tag_id = { 0x04, 0x42, 0xC4, 0x4F, 0x6F, 0x61, 0x80 }, .doom_keycode = KEY_USE },
+  { .tag_id = { 0x04, 0x5B, 0xE1, 0x34, 0x4F, 0x61, 0x80 }, .doom_keycode = KEY_ENTER },
   { .is_end = 1 },
 };
 
-#define HEADER_LENGTH 7
+#define HEADER_LENGTH (7)
 
 int vanilla_keyboard_mapping = 1;
 
@@ -53,6 +63,14 @@ char current_message[65536 + 4 + 8] = { 0 };
 char prev_key = 0;
 
 int offset = 0;
+
+void print_hex(char* buf, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    fprintf(stderr, "%02hhx", buf[i]);
+  }
+  fprintf(stderr, "\n");
+}
+
 /* Helper function for error handling. */
 int check(enum sp_return result)
 {
@@ -82,41 +100,63 @@ int check(enum sp_return result)
 // returns whether we should keep trying to read
 boolean nfc_read(void)
 {
+  static_assert(sizeof(ipp_header) == 7);
   if (nfc_port == NULL)
     return false;
 
   if (offset < HEADER_LENGTH) {
+    // fprintf(stderr, "trying to read header\n");
     int ret = check(sp_nonblocking_read(nfc_port, current_message + offset, HEADER_LENGTH - offset));
     if (ret == 0)
       return false;
+    // fprintf(stderr, "serial: read %d bytes of header\n", ret);
+    // print_hex(current_message + offset, ret);
+    if (current_message[0] != 0xbc) {
+      // fprintf(stderr, "got non-ipp message\n");
+      offset = 0;
+      return true;
+    }
     offset += ret;
   }
   if (offset >= HEADER_LENGTH) {
     ipp_header head;
 
-    memcpy(current_message, &head, HEADER_LENGTH);
+    memcpy(&head, current_message, HEADER_LENGTH);
 
-    int full_length = HEADER_LENGTH + head.data_length;
+
+    int data_length = (head.data_length_msb << 8) | head.data_length_lsb;
+
+    int full_length = HEADER_LENGTH + data_length;
 
     int ret = check(sp_nonblocking_read(nfc_port, current_message + offset, full_length - offset));
     if (ret == 0)
       return false;
+    // fprintf(stderr, "serial: read %d bytes of data\n", ret);
+    // print_hex(current_message + offset, ret);
     offset += ret;
+    // fprintf(stderr, "data_length_msb is %02hhx\n", head.data_length_msb);
+    // fprintf(stderr, "data_length_lsb is %02hhx\n", head.data_length_lsb);
+    // fprintf(stderr, "offset is %d\n", offset);
+    // fprintf(stderr, "length is %d\n", full_length);
 
     if (offset >= full_length) {
-      fprintf(stderr, "Got ipp message\n");
+      // fprintf(stderr, "Got ipp message\n");
       offset = 0;
       // 0xbe = PICC Read
       if (head.message_type == 0xbe) {
-        if (head.data_length != 21) {
-          fprintf(stderr, "dunno how to read length %d", (int)head.data_length);
+        if (data_length != 21) {
+          fprintf(stderr, "dunno how to read length %d", data_length);
           return true;
         }
         char tag_id[7];
+        memcpy(tag_id, current_message + HEADER_LENGTH + 11, 7);
+        fprintf(stderr, "read tag uid ");
+        print_hex(tag_id, 7);
         for (int i=0; all_tags[i].is_end == 0; i++) {
           tag_info this_tag = all_tags[i];
-          if (this_tag.tag_id == tag_id) {
+          if (memcmp(this_tag.tag_id, tag_id, 7) == 0) {
             event_t ev;
+            fprintf(stderr, "found tag with keycode %d\n", (int)this_tag.doom_keycode);
             if (prev_key != 0) {
               ev.type = ev_keyup;
               ev.data1 = prev_key;
@@ -134,9 +174,7 @@ boolean nfc_read(void)
             break;
           }
         }
-        memcpy(current_message + HEADER_LENGTH + 11, tag_id, 7);
       }
-      // TODO: do stuff with the message
       return true;
     }
   }
@@ -145,6 +183,7 @@ boolean nfc_read(void)
 
 void I_GetEvent(void)
 {
+  // fprintf(stderr, "I_GetEvent\n");
   while (nfc_read()) {}
 }
 
